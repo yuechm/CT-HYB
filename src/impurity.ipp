@@ -762,6 +762,7 @@ void HybridizationSimulation<IMP_MODEL>::prepare_for_measurement() {
                     "Warning: flat histogram is not yet obtained for MPI rank %1%. Increase thermalization time!"
                 ) % global_mpi_rank << std::endl;
     }
+    p_flat_histogram_config_space->synchronize(comm);
     p_flat_histogram_config_space->finish_learning(false);
   }
   measurements["Pert_order_start"] << pert_order_recorder.mean();
