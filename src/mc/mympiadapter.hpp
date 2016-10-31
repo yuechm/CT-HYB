@@ -69,6 +69,7 @@ template<typename Base> class mymcmpiadapter : public alps::mcmpiadapter<Base,my
     const time_t start_time = time(NULL);
     bool all_processes_thermalized = false;
     bool this_thermalized = false;
+    time_t last_output_time = time(NULL);
 
     do {
       if (!this->is_thermalized()) {
@@ -92,16 +93,17 @@ template<typename Base> class mymcmpiadapter : public alps::mcmpiadapter<Base,my
       }
 
       this->update();
-      if (this->is_thermalized()) {
+      if (all_processes_thermalized) {
         this->measure();
       }
       if (stopped || base_type_::schedule_checker.pending() || !all_processes_thermalized) {
         stopped = stop_callback();
         done = stopped;
         base_type_::schedule_checker.update(0.0);
-        if (base_type_::communicator.rank() == 0) {
+        if (base_type_::communicator.rank() == 0 && time(NULL) - last_output_time > 1.0) {
           std::cout << "Checking if the simulation is finished: "
                   <<  time(NULL) - start_time << " sec passed." << std::endl;
+          last_output_time = time(NULL);
         }
       }
     } while(!done);

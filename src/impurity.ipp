@@ -763,6 +763,12 @@ void HybridizationSimulation<IMP_MODEL>::prepare_for_measurement() {
                 ) % global_mpi_rank << std::endl;
     }
     p_flat_histogram_config_space->synchronize(comm);
+    // Apply the new worm space weights
+    config_space_extra_weight[0] = 1.0;
+    for (int w = 0; w < worm_types.size(); ++w) {
+      config_space_extra_weight[w + 1] = p_flat_histogram_config_space->weight_ratio(w + 1, 0);
+      worm_space_extra_weight_map[worm_types[w]] = p_flat_histogram_config_space->weight_ratio(w + 1, 0);
+    }
     p_flat_histogram_config_space->finish_learning(false);
   }
   measurements["Pert_order_start"] << pert_order_recorder.mean();
