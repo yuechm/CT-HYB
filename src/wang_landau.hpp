@@ -152,7 +152,7 @@ class FlatHistogram {
                   MPI_SUM,
                   comm);
     std::transform(log_f_out.begin(), log_f_out.end(), log_f_.begin(),
-                   std::bind1st(std::divides<double>(), 1.*comm.size())
+                   std::bind2nd(std::divides<double>(), 1.*comm.size())
     );
   }
 
