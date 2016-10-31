@@ -69,6 +69,7 @@ template<typename Base> class mymcmpiadapter : public alps::mcmpiadapter<Base,my
     const time_t start_time = time(NULL);
     bool all_processes_thermalized = false;
     bool this_thermalized = false;
+
     do {
       if (!this->is_thermalized()) {
         this->update_thermalization_status();
@@ -94,7 +95,7 @@ template<typename Base> class mymcmpiadapter : public alps::mcmpiadapter<Base,my
       if (this->is_thermalized()) {
         this->measure();
       }
-      if (stopped || base_type_::schedule_checker.pending()) {
+      if (stopped || base_type_::schedule_checker.pending() || !all_processes_thermalized) {
         stopped = stop_callback();
         done = stopped;
         base_type_::schedule_checker.update(0.0);
@@ -104,6 +105,7 @@ template<typename Base> class mymcmpiadapter : public alps::mcmpiadapter<Base,my
         }
       }
     } while(!done);
+
     this->finish_measurement();
     return std::make_pair(!stopped, this->is_thermalized());
   }
