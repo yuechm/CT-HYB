@@ -11,7 +11,7 @@ void HybridizationSimulation<IMP_MODEL>::define_parameters(parameters_type &para
   long > ("timelimit", "Total simulation time (in units of second)")
       .define<double>("thermalization_time",
                       -1,
-                      "Thermalization time (in units of second). The default value is 25 % of timelimit.")
+                      "Thermalization time (in units of second). The default value is 10 % of timelimit.")
       //.define<int>("Tmin", 1, "The scheduler checks longer than every Tmin seconds if the simulation is finished.")
       //.define<int>("Tmax", 60, "The scheduler checks shorter than every Tmax seconds if the simulation is finished.")
       .define<std::string>("outputfile",
@@ -122,7 +122,7 @@ HybridizationSimulation<IMP_MODEL>::HybridizationSimulation(parameters_type cons
 {
 
   if (thermalization_time < 0) {
-    thermalization_time = static_cast<double>(0.25 * parameters["timelimit"].template as<double>());
+    thermalization_time = static_cast<double>(0.1 * parameters["timelimit"].template as<double>());
   }
   if (thermalization_time > 0.9 * parameters["timelimit"].template as<double>()) {
     throw std::runtime_error("timelimit is too short in comparison with thermalization_time.");
@@ -489,15 +489,25 @@ template<typename IMP_MODEL>
 void HybridizationSimulation<IMP_MODEL>::do_one_sweep() {
   assert(sliding_window.get_position_right_edge() == 0);
 
-  boost::random::uniform_int_distribution<> dist(1, par["update.multi_pair_ins_rem"].template as<int>());
-  const int rank_ins_rem = dist(random.engine());
+  //Propose higher-order insertion/removal updates less frequently
+  std::vector<double> proposal_rates;
+  {
+    double p = 1.0;
+    for (int update_rank = 0; update_rank < par["update.multi_pair_ins_rem"].template as<int>(); ++update_rank) {
+      proposal_rates.push_back(p);
+      p *= 0.25;
+    }
+  }
+  boost::random::discrete_distribution<> dist(proposal_rates);
+
+  const int rank_ins_rem = dist(random.engine()) + 1;
   const int current_n_window = std::max(N_win_standard / rank_ins_rem, 1);
   if (current_n_window != sliding_window.get_n_window()) {
     sliding_window.set_window_size(current_n_window, mc_config.operators, 0, ITIME_LEFT);
   }
 
   assert(sliding_window.get_position_right_edge() == 0);
-  const int num_move = std::max(4 * current_n_window - 4, 1);
+  const int num_move = std::max(2 * current_n_window - 2, 1);
   for (int move = 0; move < num_move; ++move) {
     double pert_order_sum = 0;
     //insertion and removal of operators hybridized with the bath
@@ -514,6 +524,9 @@ void HybridizationSimulation<IMP_MODEL>::do_one_sweep() {
 
     if (is_thermalized()) {
       config_spaces_visited_in_measurement_steps[get_config_space_position(mc_config.current_config_space())] = true;
+      //if (move%10 == 0) {
+        //measure_every_step();
+      //}
     }
 
     transition_between_config_spaces();

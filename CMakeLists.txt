@@ -16,15 +16,16 @@ set(CMAKE_INCLUDE_CURRENT_DIR on)
 # automatically, specify its location using:
 # export ALPSCore_DIR=/location/to/ALPSCORE/
 find_package(ALPSCore REQUIRED)
+
+#Find MPI
+include(EnableMPI)
+
 if (MEASURE_TIMING)
     message("measurement of timing enabled")
     add_definitions(-DMEASURE_TIMING)
     find_package(Boost 1.54.0 REQUIRED timer)
 else()
     find_package(Boost 1.54.0)
-endif()
-if (ALPS_ENABLE_MPI)
-    find_package(MPI REQUIRED)
 endif()
 find_package(Eigen3 REQUIRED)
 
